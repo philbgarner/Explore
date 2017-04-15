@@ -218,8 +218,16 @@ function world:voronoi()
         end
       end
       mapdata[i][j].id = id
-      mapdata[i][j].province_type = points[id].province_type
-      mapdata[i][j].precipitation = precipitation_lookup[points[id].province_type]
+      if points[id] ~= nil then
+        mapdata[i][j].province_type = points[id].province_type
+      else
+        mapdata[i][j].province_type = 1
+      end
+      if points[id] ~= nil then
+        mapdata[i][j].precipitation = precipitation_lookup[points[id].province_type]
+      else
+        mapdata[i][j].precipitation = 1.0
+      end
       --console:write("Precip Lookup" .. precipitation_lookup[h] .. ", h=" .. h)
     end
   end
@@ -420,16 +428,18 @@ function tileCandidates(biome_id, altitude, latitude, precipitation)
   
   local cnd = {}
   
+  local mountain_h = 0.35
+  
   if altitude <= 0 then
     table.insert(cnd, 2) -- Sea
   else
     
-    if (biome_id == 1 or biome_id == 3) and (altitude >= 0 and altitude <= 0.5) and (latitude <= 40 and latitude >= -40) and (precipitation > 0.25 and precipitation <= 0.6) then
+    if (biome_id == 1 or biome_id == 3) and (altitude >= 0 and altitude <= mountain_h) and (latitude <= 40 and latitude >= -40) and (precipitation > 0.25 and precipitation <= 0.6) then
       table.insert(cnd, 3) -- Grassland
     end
     
     if (biome_id == 1 or biome_id == 2 or biome_id == 3 or biome_id == 4 or biome_id == 5 or biome_id == 6)
-      and (altitude >= 0.4 and altitude <= 1) and (latitude <= 90 and latitude >= -90) and (precipitation >= 0 and precipitation <= 1)
+      and (altitude >= mountain_h and altitude <= 1) and (latitude <= 90 and latitude >= -90) and (precipitation >= 0 and precipitation <= 1)
     then
       table.insert(cnd, 5) -- Mountains
     end
@@ -441,9 +451,21 @@ function tileCandidates(biome_id, altitude, latitude, precipitation)
     end
     
     if (biome_id == 1 or biome_id == 4 or biome_id == 5)
-      and (altitude >= 0 and altitude <= 0.4) and (latitude <= 55 and latitude >= -55) and (precipitation > 0.25 and precipitation <= 0.8)
+      and (altitude >= 0 and altitude <= mountain_h) and (latitude <= 55 and latitude >= -55) and (precipitation > 0.25 and precipitation <= 0.8)
     then
       table.insert(cnd, 6) -- Forest
+    end
+
+    if (biome_id == 6)
+      and (altitude >= 0 and altitude <= 1) and (latitude <= 90 and latitude >= -90) and (precipitation > 0.0 and precipitation <= 1.0)
+    then
+      table.insert(cnd, 7) -- Tundra
+    end
+    
+     if (biome_id == 6)
+      and (altitude >= 0 and altitude <= 0.85) and (latitude <= 80 and latitude >= -80) and (precipitation > 0.15 and precipitation <= 0.5)
+    then
+      table.insert(cnd, 8) -- Taiga
     end
     
   end
@@ -457,6 +479,7 @@ function tileCandidates(biome_id, altitude, latitude, precipitation)
 end
 
 function world:generateMap()
+  
   for k=1, world.data.map_height do
     for i=1, world.data.map_width do
         local ph = world:getHeight(i, k) - world.data.water_level
@@ -467,6 +490,26 @@ function world:generateMap()
         world:setMap(1, i, k, 0, tc[tcid], 0)
     end
   end
+  
+  local canv = love.graphics.newCanvas(world.data.map_width, world.data.map_height)
+  
+  local tiles1x1 = love.graphics.newImage("images/tileset1x1.png")
+  
+  love.graphics.setCanvas(canv)
+
+    for k=1, world.data.map_height do
+      for i=1, world.data.map_width do
+        local tid = world.data.map[1][k][i].tile
+        
+        local r, g, b, a = tiles1x1:getData():getPixel(tid - 1, 0)
+        love.graphics.setColor(r, g, b, 255)
+        love.graphics.points(i, k)
+        love.graphics.setColor(255, 255, 255)
+      end
+    end
+    
+  love.graphics.setCanvas()
+  map_image = love.graphics.newImage(canv:newImageData())
   
 end
 

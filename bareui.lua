@@ -7,6 +7,10 @@ function bareui:addWidget(id, text, x, y, w, h, draw, click, keypress)
 
 end
 
+function bareui:removeWidget(id)
+  bareui.widgets[id] = nil
+end
+
 function bareui:create()
 
   bareui = {
@@ -21,6 +25,7 @@ function bareui:create()
   bareui.images.ui_left_right_button = love.graphics.newImage("images/left-right-buttons.png")
   bareui.images.ui_terrain_types = love.graphics.newImage("images/terraintypes.png")
   bareui.images.ui_button = love.graphics.newImage("images/ui_button.png")
+  bareui.images.ui_zoom_control = love.graphics.newImage("images/ui_zoom_control.png")
   
 end
 

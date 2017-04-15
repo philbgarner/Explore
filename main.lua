@@ -12,6 +12,8 @@ world_y = 270
 minimap_show = 1
 sel_voronoi = 0
 
+map_image = nil
+
 -- Tile Palette
 page_no = 1
 page_max = 1
@@ -30,13 +32,15 @@ tooltip_desc = ""
 -- Preview Canvas Stuff
 prvCanvas = nil
 prvImage = nil
-
+prvZoom = 1
+prvOffsetX = 0
+prvOffsetY = 0
 
 function love.draw()
 
   world:draw()
   
-  --ui.draw()
+  ui.draw()
   --console:draw()
   
   if tooltip then
@@ -45,6 +49,11 @@ function love.draw()
     
     love.graphics.print(tooltip_desc, dx, dy)
   end
+  
+  if map_image ~= nil then
+    love.graphics.draw(map_image, 50, 50)
+  end
+  
 end
 
 function love.textinput(key)
@@ -126,18 +135,24 @@ function refreshPreview()
   for i=1, world.data.map_height do
     for j=1, world.data.map_width do
       local id = world.data.provinces[i][j].id
-      local h = pts[id].avg_height
+      local h = 0.5
+      if pts[id] ~= nil then
+        h = pts[id].avg_height
+      end
       if id ~= nil and id > 0 then
         local cl = type_colours[pts[id].province_type]
         love.graphics.setColor(cl[1], cl[2], cl[3])
-        love.graphics.circle("line", pts[id].x, pts[id].y, 2)
+        love.graphics.rectangle("line", pts[id].x, pts[id].y, 1, 1)
         love.graphics.setColor(255, 255, 255)
       end
       local th = world:getHeight(j - 1, i - 1) * h
       if th <= wl then
         love.graphics.setColor(15, 75, 225)
       else
-        local cl = type_colours[pts[id].province_type]
+        local cl = {150, 150, 150}
+        if pts[id] ~= nil then
+          cl = type_colours[pts[id].province_type]
+        end
         love.graphics.setColor(th * (cl[1]), th * (cl[2]), th * (cl[3]), 255)
       end
       love.graphics.points(j, i)
@@ -222,9 +237,9 @@ function love.load()
   world:create("World1", world_x, world_y)
   world:tileset("images/tileset.png", "images/blendtiles.png", 32, 32)
   world:map(world_x, world_y)
-  world:loadProvincePoints()
+  --world:loadProvincePoints()
   world:voronoi()
-  world:generateMap()
+  --world:generateMap()
   
   prvCanvas = love.graphics.newCanvas(world_x, world_y)
   refreshPreview()
@@ -354,21 +369,28 @@ function love.load()
           love.graphics.rectangle("line", 190 + 37 * (pts[sel_voronoi].province_type - 1), 410, 37, 25)
         end
         
+        local viewport_w = (world.data.map_width / prvZoom) / 2
+        local viewport_h = (world.data.map_height / prvZoom) / 2
         if minimap_show == 3 then -- Preview
           love.graphics.draw(ui:getImages().ui_select_jewel, 260, 15)
           
           local pts = world:getProvincePoints()
           if #pts > 0 then
+            love.graphics.setScissor(40, 40, world.data.map_width, world.data.map_height)
             
+            love.graphics.push()
+            love.graphics.scale(prvZoom)
+            love.graphics.translate(-prvOffsetX + viewport_w, -prvOffsetY + viewport_h)     
             if world.data.map_width ~= nil then
-              love.graphics.draw(prvImage, 40, 40)
+              love.graphics.draw(prvImage, 0, 0)
               if sel_voronoi > 0 then
                 love.graphics.setColor(255, 0, 0)
-                love.graphics.rectangle("line", pts[sel_voronoi].x - 4 + 40, pts[sel_voronoi].y - 4 + 40, 8, 8)
+                love.graphics.rectangle("line", pts[sel_voronoi].x - 4, pts[sel_voronoi].y - 4, 8, 8)
                 love.graphics.setColor(255, 255, 255)
               end
             end
-            
+            love.graphics.pop()
+            love.graphics.setScissor()
           end
           --love.graphics.draw(world.data.heightmap, 41, 40)
           
@@ -377,6 +399,10 @@ function love.load()
           local pids = world:getProvincePoints()
           
           if world.data.map_width ~= nil then
+            love.graphics.setScissor(40, 40, world.data.map_width, world.data.map_height)
+            love.graphics.push()
+            love.graphics.scale(prvZoom)
+            love.graphics.translate(-prvOffsetX, -prvOffsetY)
             for i=1, world.data.map_height do
               for j=1, world.data.map_width do
                 local id = world.data.provinces[i][j].id
@@ -387,15 +413,37 @@ function love.load()
                   love.graphics.setColor(255, 0, 0)
                   love.graphics.circle("line", pids[id].x + 40, pids[id].y + 40, 4)
                   love.graphics.setColor(255, 255, 255)
+                  if sel_voronoi > 0 then
+                    love.graphics.setColor(255, 255, 0)
+                    love.graphics.rectangle("line", pids[sel_voronoi].x - 4 + 40, pids[sel_voronoi].y - 4 + 40, 8, 8)
+                    love.graphics.setColor(255, 255, 255)
+                  end
                 end
               end
             end
+            love.graphics.pop()
+            love.graphics.setScissor()
           end
         elseif minimap_show == 1 then -- Heightmap
           love.graphics.draw(ui:getImages().ui_select_jewel, 50, 15)
-          
-          love.graphics.draw(world.data.heightmap, 41, 40)
+          love.graphics.setScissor(40, 40, world.data.map_width, world.data.map_height)
+          love.graphics.push()
+          love.graphics.scale(prvZoom)
+          love.graphics.translate(-prvOffsetX, -prvOffsetY)  
+            love.graphics.draw(world.data.heightmap, 41, 40) 
+          love.graphics.pop()
+          love.graphics.setScissor()
         end
+        
+        local offz = 0
+        if prvZoom <= 1 then
+          offz = (87) * prvZoom
+        else
+          offz = 87 + (prvZoom / 10) * 87
+        end
+        love.graphics.draw(ui.getImages().ui_zoom_control, 60, 50)
+        love.graphics.rectangle("fill", 60, 66 + 174 - offz, 16, 4)
+        love.graphics.print("z" .. prvZoom, 60, 35)
         
         love.graphics.print("Heightmap", 80, 23)
         love.graphics.print("Provinces", 185, 23)
@@ -407,31 +455,51 @@ function love.load()
       end
       ,function (x, y, button) -- fnClick
           
+        if button == 2 then
+          
+          prvOffsetX = x - 40
+          prvOffsetY = y - 40
+          return
+          
+        end
+          
         if x > 50 and y > 15 and x < 77 and y < 45 then
           minimap_show = 1
+          return
         elseif x > 155 and y > 15 and x < 182 and y < 45 then
           minimap_show = 2
+          return
         elseif x > 260 and y > 15 and x < 287 and y < 45 then
           minimap_show = 3
+          return
         end
         
         if x > 190 and y > 410 and x < 228 + 190 and y < 425 then
           local ptype = math.floor((x - 190) / 38) + 1;
           world:setProvinceType(sel_voronoi, ptype)
           refreshPreview()
+          return
         end
         
         if x > 580 and x < 580 + 220 and y > 400 and y < 435 then
           world:generateMap()
+          ui:removeWidget("minimap")
+          return
         end
         
         -- Left/right province selector.
         if x > 25 and x < 76 and y > 400 and y < 430 then
           sel_voronoi = sel_voronoi - 1
-          if sel_voronoi < 0 then sel_voronoi = #world:getProvincePoints() end
+          if sel_voronoi < 1 then sel_voronoi = #world:getProvincePoints() end
+          prvOffsetX = world:getProvincePoints()[sel_voronoi].x
+          prvOffsetY = world:getProvincePoints()[sel_voronoi].y
+          return
         elseif x > 76 and x < 101 and y > 400 and y < 430 then
           sel_voronoi = sel_voronoi + 1
-          if sel_voronoi > #world:getProvincePoints() then sel_voronoi = 0 end
+          if sel_voronoi > #world:getProvincePoints() then sel_voronoi = 1 end
+          prvOffsetX = world:getProvincePoints()[sel_voronoi].x
+          prvOffsetY = world:getProvincePoints()[sel_voronoi].y
+          return
         end
         
         -- Height setting.
@@ -439,15 +507,35 @@ function love.load()
           local ah = (x - 275) / 100
           world:setProvinceHeight(sel_voronoi, ah)
           refreshPreview()
+          return
         end
         
+        -- Zoom Control
+--         love.graphics.draw(ui.getImages().ui_zoom_control, 60, 50)
+--        love.graphics.rectangle("fill", 60, 66 + 174 - offz, 16, 4)
+        if x > 60 and x < 76 and y > 50 and y < 66 then
+          prvZoom = prvZoom + 0.1
+          return
+        elseif x > 60 and x < 76 and y > 50 + 174 and y < 66 + 174 then
+          prvZoom = prvZoom - 0.1
+          return
+        end        
+        
+                
         if x > 40 and y > 40 and x < 40 + world.data.map_width and y < 40 + world.data.map_height then
+          local viewport_w = (world.data.map_width / prvZoom) / 2
+          local viewport_h = (world.data.map_height / prvZoom) / 2
           local ph = 1.0 --world:getHeight(x, y)
-          world:addProvince(x - 40, y - 40, ph)
+
+          local mx = x
+          local my = y
+          local mapx = math.floor((mx) / prvZoom + prvOffsetX - viewport_w)
+          local mapy = math.floor((my) / prvZoom + prvOffsetY - viewport_h)
+          world:addProvince(mapx, mapy, ph)
           world:voronoi()
           refreshPreview()
         end
-          
+        
       end 
       ,function (key, scancode)
         
