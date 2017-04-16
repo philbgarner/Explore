@@ -3,6 +3,9 @@ console = require "Console"
 world = require "worldmap"
 bitser = require "bitser"
 local ui = require "bareui"
+suit = require 'suit'
+
+console_active = false
 
 -- Game UI settings
 world_x = 640
@@ -35,13 +38,13 @@ prvImage = nil
 prvZoom = 1
 prvOffsetX = 0
 prvOffsetY = 0
+prvProvinceName = {text = ""}
 
 function love.draw()
 
   world:draw()
   
   ui.draw()
-  --console:draw()
   
   if tooltip then
     local dx = tooltip_x * 32
@@ -54,17 +57,35 @@ function love.draw()
     love.graphics.draw(map_image, 50, 50)
   end
   
+  suit.draw()
+  if console_active then
+    console:draw()
+  end
+  
 end
 
 function love.textinput(key)
   
-  console:keyInput(key)
+  if key == "~" then
+    console_active = not console_active
+    return
+  end
+  
+  if console_active then
+    console:keyInput(key)
+  else
+    suit.textinput(key)
+  end
   
 end
 
 function love.keypressed(key, scancode)
 
-  console:keypress(key, scancode)
+  if console_active then
+    console:keypress(key, scancode)
+  else
+    suit.keypressed(key)
+  end
   
 end
 
@@ -78,7 +99,7 @@ function love.mousepressed(x, y, button)
     local t = world.data.map[1][my][mx]
     local p = world.data.provinces[my][mx]
     local a = world:getHeight(mx, my)
-    tooltip_desc = "ID: " .. t.tile .. ",Alt: " .. a .. ",Lat: " .. 0 .. ",Precip: " .. p.precipitation
+    tooltip_desc = "Prov: " .. t.name .. ",Alt: " .. a .. ",Lat: " .. 0 .. ",Precip: " .. p.precipitation
     tooltip_x = tonumber(math.floor(x / world:getTileset().width)) + 1
     tooltip_y = tonumber(math.floor(y / world:getTileset().height))
     tooltip = true
@@ -367,6 +388,11 @@ function love.load()
 
           love.graphics.draw(ui.getImages().ui_terrain_types, 190, 410)
           love.graphics.rectangle("line", 190 + 37 * (pts[sel_voronoi].province_type - 1), 410, 37, 25)
+                
+          -- SUIT UI Stuff
+          prvProvinceName.text = pts[sel_voronoi].name
+          suit.Input(prvProvinceName, 390, 385, 120, 15)
+          pts[sel_voronoi].name = prvProvinceName.text
         end
         
         local viewport_w = (world.data.map_width / prvZoom) / 2

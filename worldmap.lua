@@ -121,6 +121,7 @@ function world:addProvince(x, y, avg)
         ,b = 100
         ,x = x
         ,y = y
+        ,name = "Province"
         ,province_type = 1
         ,avg_height = avg
         ,precipitation = 0.5
@@ -373,6 +374,15 @@ function world:setMap(l, x, y, blend, t1, t2)
   world.data.map[l][y][x].blend = blend
   world.data.map[l][y][x].tile = t1
   world.data.map[l][y][x].tile2 = t2
+  
+  local pid = world.data.provinces[y][x].id
+  local provinceName = ""
+  if pid ~= nil and pid > 0 and world.data.provincePoints[pid] ~= nil then
+    provinceName = world.data.provincePoints[pid].name
+  end
+  
+  world.data.map[1][y][x].name = provinceName
+  world.data.map[1][y][x].province_id = pid
 end
 
 function world:setHeight(x, y, v)
@@ -485,6 +495,7 @@ function world:generateMap()
         local ph = world:getHeight(i, k) - world.data.water_level
         local pr = world:getPrecipitation(i, k)
         local ptype = world.data.provinces[k][i].province_type
+        local name = world.data.provinces[k][i].name
         local tc = tileCandidates(ptype, ph, 0, pr)
         local tcid = math.floor((math.random() * #tc) + 1)
         world:setMap(1, i, k, 0, tc[tcid], 0)
