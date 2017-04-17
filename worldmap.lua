@@ -128,6 +128,19 @@ function world:addProvince(x, y, avg)
       })
 end
 
+function world:delProvince(id)
+  local newp = {}
+  local provs = world:getProvincePoints()
+  for i=1, #provs do 
+    local p = provs[i]
+    if id ~= i then
+      table.insert(newp, p)
+    end
+  end
+  
+  world.data.provincePoints = newp
+end
+
 function world:setPrecipitation(x, y, v)
   x = math.floor(x)
   y = math.floor(y)
@@ -212,10 +225,12 @@ function world:voronoi()
       local od = world.data.map_width * 2
       local id = 0
       for p=1, #points do
-        local nd = distance(points[p].x, points[p].y, j, i)
-        if od > nd then
-          od = nd
-          id = p
+        if points[p] ~= nil then
+          local nd = distance(points[p].x, points[p].y, j, i)
+          if od > nd then
+            od = nd
+            id = p
+          end
         end
       end
       mapdata[i][j].id = id

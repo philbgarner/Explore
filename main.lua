@@ -393,6 +393,15 @@ function love.load()
           prvProvinceName.text = pts[sel_voronoi].name
           suit.Input(prvProvinceName, 390, 385, 120, 15)
           pts[sel_voronoi].name = prvProvinceName.text
+          
+          suit.layout:reset(520, 385, 0, 0)
+          
+          if suit.Button("Del", suit.layout:row(35,15)).hit then
+            world:delProvince(sel_voronoi)
+            world:voronoi()
+            refreshPreview()
+          end
+          
         end
         
         local viewport_w = (world.data.map_width / prvZoom) / 2
