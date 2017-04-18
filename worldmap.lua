@@ -7,27 +7,20 @@ local world = {
   
 local shaders = {
     mix = love.graphics.newShader([[
-      extern float threshold;
       extern Image tile2;
       extern Image blendTile;
       
       vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
-        vec4 tx;
-        if (threshold < Texel(blendTile, texture_coords).a)
-        {
-          tx = Texel(texture, texture_coords);
-        }
-        else
-        {
-          tx = Texel(tile2, texture_coords);
-        }
+        vec4 tx, tx2, blend;
         
-        if (tx.r == 1.0 && tx.g == 0.0 && tx.b == 1.0)
-        {
-          return vec4(0.0, 0.0, 0.0, 0.0);
-        }
+        tx = Texel(texture, texture_coords);
+        tx2 = Texel(tile2, texture_coords);
+        blend = Texel(blendTile, texture_coords);
         
-        return tx;
+        return vec4(tx.r * blend.a + tx2.r * (1.0 - blend.a)
+          ,tx.g * blend.a + tx2.g * (1.0 - blend.g)
+          ,tx.b * blend.a + tx2.b * (1.0 - blend.b)
+          ,1.0);
         
       }
       
@@ -49,7 +42,7 @@ function world:tileset(name, blends, width, height)
     table.insert(ts, love.graphics.newQuad(cx, cy, width, height, imgw, imgh))
 
     cx = cx + width
-    if cx > imgw then
+    if cx >= imgw then
       cx = 0
       cy = cy + height
     end
@@ -366,7 +359,8 @@ function world:draw()
       local rowdata = {}
       for j=sx, vw do
         local t = world.data.map[l][i][j]
-        if l == 1 then world:drawTile(t.blend, t.tile, t.tile2, dx, dy) end
+        --if l == 1 then world:drawTile(t.blend, t.tile, t.tile2, dx, dy) end
+        world:drawTile(t.blend, t.tile, t.tile2, dx, dy)
         
         if l == 3 then -- Border stuff
           
@@ -378,25 +372,25 @@ function world:draw()
             local current = world.data.map[1][i][j].province_id
             local tile = world.data.map[1][i][j].tile
             
-            love.graphics.setColor(255, 255, 255, 125)
+            love.graphics.setColor(255, 255, 255, 255)
             -- Top Cell Border
             if north ~= current and tile ~= 2 then
-              love.graphics.rectangle("fill", dx, dy, 32, 1)
+              world:drawTile(0, 62, 0, dx, dy)
             end
             
             -- Bottom
             if south ~= current and tile ~= 2  then
-              love.graphics.rectangle("fill", dx, dy + 31, 32, 1)
+              world:drawTile(1, 64, 1, dx, dy)
             end
             
             -- Right
             if east ~= current and tile ~= 2  then
-              love.graphics.rectangle("fill", dx + 31, dy, 1, 32)
+              world:drawTile(1, 61, 1, dx, dy)
             end
             
             -- Left
             if west ~= current and tile ~= 2  then
-              love.graphics.rectangle("fill", dx, dy, 1, 32)
+              world:drawTile(1, 63, 1, dx, dy)
             end
             love.graphics.setColor(255, 255, 255, 255)
             
@@ -467,7 +461,7 @@ function world:drawTile(blendMode, tileid, tile2id, x, y)
   local sd = shaders.mix
   
   if blendMode > 0 and tile2id > 1 then    
-    sd:send("threshold", 0.5)
+    --sd:send("threshold", 0.5)
 
     love.graphics.setCanvas(tile2)
       love.graphics.draw(world.data.tileset.image, world.data.tileset.tiles[tile2id], 0, 0)
