@@ -1,6 +1,6 @@
 local world = {
-    scrollx = 1
-    ,scrolly = 1
+    scrollx = 307
+    ,scrolly = 45
     ,data = {}
   }
 
@@ -353,18 +353,57 @@ function world:draw()
   
   local sx = world.scrollx
   local sy = world.scrolly
-  local vw = sx + 16
+  local vw = sx + 24
   local vh = sy + 19
   
   if vh > world.data.map_height then vh = world.data.map_height end
   if vw > world.data.map_width then vw = world.data.map_width end
   
   for l=1, 3 do
+    dx = 0
+    dy = 0
     for i=sy, vh do
       local rowdata = {}
       for j=sx, vw do
         local t = world.data.map[l][i][j]
-        world:drawTile(t.blend, t.tile, t.tile2, dx, dy)
+        if l == 1 then world:drawTile(t.blend, t.tile, t.tile2, dx, dy) end
+        
+        if l == 3 then -- Border stuff
+          
+          if j > 1 and j < world.data.map_width and i > 1 and i < world.data.map_height then
+            local north = world.data.map[1][i - 1][j].province_id
+            local south = world.data.map[1][i + 1][j].province_id
+            local east = world.data.map[1][i][j + 1].province_id
+            local west = world.data.map[1][i][j - 1].province_id
+            local current = world.data.map[1][i][j].province_id
+            local tile = world.data.map[1][i][j].tile
+            
+            love.graphics.setColor(255, 255, 255, 125)
+            -- Top Cell Border
+            if north ~= current and tile ~= 2 then
+              love.graphics.rectangle("fill", dx, dy, 32, 1)
+            end
+            
+            -- Bottom
+            if south ~= current and tile ~= 2  then
+              love.graphics.rectangle("fill", dx, dy + 31, 32, 1)
+            end
+            
+            -- Right
+            if east ~= current and tile ~= 2  then
+              love.graphics.rectangle("fill", dx + 31, dy, 1, 32)
+            end
+            
+            -- Left
+            if west ~= current and tile ~= 2  then
+              love.graphics.rectangle("fill", dx, dy, 1, 32)
+            end
+            love.graphics.setColor(255, 255, 255, 255)
+            
+          end
+          
+        end
+        
         dx = dx + world.data.tileset.width
       end
       dx = 0
