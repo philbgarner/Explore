@@ -5,6 +5,8 @@ bitser = require "bitser"
 local ui = require "bareui"
 suit = require 'suit'
 
+Item = require "Item"
+
 console_active = false
 
 -- Game UI settings
@@ -191,6 +193,7 @@ function refreshPreview()
   end
   love.graphics.setCanvas()
   prvImage = love.graphics.newImage(prvCanvas:newImageData())
+  prvImage:setFilter("nearest", "nearest")
 end
 
 function love.load()
@@ -275,6 +278,16 @@ function love.load()
   refreshPreview()
   
   --world:heightMap(0.2, 0.8, 0.5)
+
+  local new_item = Item:new("Grain", 10)
+  console:write("New Item Qty: " .. new_item.quantity)
+
+  local split_item = new_item:split(3)
+  console:write("Split Item Qty: " .. split_item.quantity)
+  console:write("Original Item Qty: " .. new_item.quantity)
+  
+  console:write("Split Item Volume: " .. split_item:volume())
+  console:write("Original Item Volume: " .. new_item:volume())
 
   ui:create()
 
@@ -404,12 +417,14 @@ function love.load()
           suit.Input(prvProvinceName, 390, 385, 120, 15)
           pts[sel_voronoi].name = prvProvinceName.text
           
-          prvProvinceX.text = pts[sel_voronoi].name
-          suit.Input(prvProvinceX, 390, 385, 120, 15)
-          pts[sel_voronoi].name = prvProvinceX.text
-          prvProvinceY.text = pts[sel_voronoi].name
-          suit.Input(prvProvinceY, 390, 385, 120, 15)
-          pts[sel_voronoi].name = prvProvinceY.text
+          prvProvinceX.text = tostring(pts[sel_voronoi].x)
+          love.graphics.print("X", 380, 365)
+          suit.Input(prvProvinceX, 390, 365, 90, 15)
+          pts[sel_voronoi].x = tonumber(prvProvinceX.text)
+          prvProvinceY.text = tostring(pts[sel_voronoi].y)
+          love.graphics.print("Y", 480, 365)
+          suit.Input(prvProvinceY, 490, 365, 90, 15)
+          pts[sel_voronoi].y = tonumber(prvProvinceY.text)
           
           suit.layout:reset(520, 385, 0, 0)
           
@@ -569,10 +584,10 @@ function love.load()
 --         love.graphics.draw(ui.getImages().ui_zoom_control, 60, 50)
 --        love.graphics.rectangle("fill", 60, 66 + 174 - offz, 16, 4)
         if x > 60 and x < 76 and y > 50 and y < 66 then
-          prvZoom = prvZoom + 0.1
+          prvZoom = prvZoom + 0.5
           return
         elseif x > 60 and x < 76 and y > 50 + 174 and y < 66 + 174 then
-          prvZoom = prvZoom - 0.1
+          prvZoom = prvZoom - 0.5
           return
         end        
         
