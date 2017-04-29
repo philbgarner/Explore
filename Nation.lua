@@ -13,7 +13,7 @@
   Usage:
   
   -- Create new nation.
-  local new_item = Nation:new("United Kingdom")
+  local new_nation = Nation:new("United Kingdom") -- Give a name to the nation.
   
 ]]--
 

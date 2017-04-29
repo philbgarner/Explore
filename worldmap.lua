@@ -243,6 +243,37 @@ function world:voronoi()
   
   world.data.provinces = mapdata
 
+  world:calculateProvinceStats()
+  
+end
+
+function world:calculateProvinceStats()
+  
+  local points = world:getProvincePoints()
+
+  local mapdata = {}  
+  for j=1, world.data.map_height do
+    for i=1, world.data.map_width do
+
+      local id = world.data.provinces[j][i].id
+
+      local p = points[id]
+      
+      if p.x1 == nil then p.x1 = i end
+      if p.y1 == nil then p.y1 = j end
+      if p.x2 == nil then p.x2 = i end
+      if p.y2 == nil then p.y2 = j end
+      
+      if p.x1 > i then p.x1 = i end
+      if p.y1 > j then p.y1 = j end
+      if p.x2 < i then p.x2 = i end
+      if p.y2 < j then p.y2 = j end
+      
+    end
+  end
+  
+  print("Point 1: ", points[4].x1, points[4].y1, points[4].x2, points[4].y2)
+
 end
 
 local function plasma(x1, y1, x2, y2, min, max)
