@@ -4,6 +4,7 @@ local world = {
     ,data = {}
   }
 
+local nations = require "Nation"
   
 local shaders = {
     mix = love.graphics.newShader([[
@@ -26,6 +27,30 @@ local shaders = {
       
     ]])
   }
+
+function world:addNation(name)
+  
+  local n = nations:new(name)
+  
+  table.insert(world.data.nations, n)
+  
+end
+
+function world:getNations()
+  
+  return world.data.nations
+  
+end
+
+function world:getNation(name)
+  
+  for i=1, #world.data.nations do
+    if world.data.nations[i].name == name then
+      return world.data.nations[i]
+    end
+  end
+  
+end
 
 function world:tileset(name, blends, width, height)
   
@@ -445,6 +470,7 @@ function world:create(name)
         ,tileset = nil
         ,provincePoints = {}
         ,water_level = 0.3
+        ,nations = {}
     }
   
 end

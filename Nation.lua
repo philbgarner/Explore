@@ -20,12 +20,17 @@
 local Nation = {}
 Nation.__index = Nation
 
+flags = require 'Flags'
+
+
 function Nation:new(name)
   
   local itm = {}
   setmetatable(itm, Nation)
   itm.name = name
   itm.manpower = 0
+  itm.flag = flags:new(name, 90, 60, 175, 175, 175)
+  itm.flag:render(0.5)
   
   return itm
   

@@ -4,7 +4,6 @@ world = require "worldmap"
 bitser = require "bitser"
 local ui = require "bareui"
 suit = require 'suit'
-flags = require 'Flags'
 
 Item = require "Item"
 
@@ -44,6 +43,15 @@ prvOffsetY = 0
 prvProvinceX = {text = ""}
 prvProvinceY = {text = ""}
 prvProvinceName = {text = ""}
+
+-- Nation/Flag Design
+natName = {text = ""}
+natSel = 0
+natLayerId = {text = ""}
+natLayerR = {text = ""}
+natLayerG = {text = ""}
+natLayerB = {text = ""}
+natSelLayer = 0
 
 function love.draw()
 
@@ -283,13 +291,145 @@ function love.load()
   ui:addWidget("nation_flags", "Nation Flags", 350, 0, 303, 243
     ,function () -- fnDraw
       
-      local flag = flags:new("Union Jack", 90, 60, 0, 0, 255)
-      flag:addLayer(14, 255, 255, 255)
-      flag:addLayer(15, 255, 255, 255)
-      flag:addLayer(16, 255, 0, 0)
-      flag:addLayer(19, 255, 255, 255)
-      flag:addLayer(11, 255, 0, 0)
-      flag:draw(50, 50, 1)
+      love.graphics.draw(ui:getImages().ui_flags , 15, 75)
+      
+      local n = world:getNations()
+      local dx = 35
+      local dy = 125
+      
+      for i=1, #n do
+      
+        n[i].flag:draw(dx, dy)
+        if i == natSel then
+          love.graphics.setColor(255, 255, 0)
+          love.graphics.rectangle("line", dx - 3, dy - 3, 51, 36)
+          love.graphics.setColor(255, 255, 255)
+        end
+  
+        dx = dx + 50
+        
+        if dx > 350 then
+          dx = 35
+          dy = dy + 35
+        end
+      
+      end
+
+      -- SUIT UI Stuff
+      --natName.text = pts[sel_voronoi].name
+      love.graphics.print("Nation Name (#" .. natSel .. "):", 425, 125)
+      suit.Input(natName, 425, 140, 120, 15)
+      --pts[sel_voronoi].name = natName.text
+      
+      suit.layout:reset(425, 100, 0, 0)
+      suit.layout:padding(5, 5)
+      
+      if suit.Button("New", suit.layout:row(35,15)).hit then
+        world:addNation("")
+        natSel = #world.data.nations
+      end
+      if suit.Button("Del", suit.layout:col(35,15)).hit then
+      end
+      if suit.Button("<", suit.layout:col(35,15)).hit then
+        natSel = natSel - 1
+        if natSel == 0 then
+          natSel = #world.data.nations
+        end
+      end
+      if suit.Button(">", suit.layout:col(35,15)).hit then
+        natSel = natSel + 1
+        if natSel > #world.data.nations then
+          natSel = 1
+        end
+      end
+      
+      if natSel > 0 then
+        
+        local nat = world.data.nations[natSel] 
+        local layers = nat.flag:getLayers()
+        
+        local dy = 0
+        
+        for i=1, #layers do
+          suit.layout:reset(575, 160 + dy, 0, 0)
+          suit.layout:padding(5, 5)
+          
+          if natSelLayer == i then
+            
+            if suit.Button("Rem", suit.layout:col(35,15)).hit then
+              nat.flag:delLayer(i)
+              return
+            end
+            local down = i + 1
+            if down > #layers then
+              down = 1
+            end
+            local up = i - 1
+            if up < 1 then
+              down = #layers
+            end
+            if suit.Button("Up", suit.layout:col(35,15)).hit then
+              if natLayerId.text ~= "" and natLayerR.text ~= "" and natLayerG.text ~= "" and natLayerB.text ~= "" then
+                nat.flag:setLayer(i, tonumber(natLayerId.text), tonumber(natLayerR.text), tonumber(natLayerG.text), tonumber(natLayerB.text))
+              end
+              nat.flag:render(0.5)
+              nat.flag:swapLayers(natSelLayer, up)
+              natSelLayer = up
+              return
+            end
+            if suit.Button("Down", suit.layout:row(45,15)).hit then
+              if natLayerId.text ~= "" and natLayerR.text ~= "" and natLayerG.text ~= "" and natLayerB.text ~= "" then
+                nat.flag:setLayer(i, tonumber(natLayerId.text), tonumber(natLayerR.text), tonumber(natLayerG.text), tonumber(natLayerB.text))
+              end
+              nat.flag:render(0.5)
+              nat.flag:swapLayers(natSelLayer, down)
+              natSelLayer = down
+              return
+            end
+            
+            suit.Input(natLayerId, 425, 160 + dy, 30, 15)
+            suit.Input(natLayerR, 460, 160 + dy, 35, 15)
+            suit.Input(natLayerG, 500, 160 + dy, 35, 15)
+            suit.Input(natLayerB, 540, 160 + dy, 35, 15)
+            
+            dy = dy + 18
+            suit.layout:reset(425, 160 + dy, 0, 0)
+            suit.layout:padding(5, 5)
+            if suit.Button("Apply Changes", suit.layout:row(175,15)).hit then
+              if natLayerId.text ~= "" and natLayerR.text ~= "" and natLayerG.text ~= "" and natLayerB.text ~= "" then
+                nat.flag:setLayer(i, tonumber(natLayerId.text), tonumber(natLayerR.text), tonumber(natLayerG.text), tonumber(natLayerB.text))
+              end
+              nat.flag:render(0.5)
+              natSelLayer = 0
+              return
+            end
+          else
+            love.graphics.print(layers[i].id, 425, 160 + dy)
+            love.graphics.print(layers[i].r, 460, 160 + dy)
+            love.graphics.print(layers[i].g, 500, 160 + dy)
+            love.graphics.print(layers[i].b, 540, 160 + dy)
+            if suit.Button("Edit #" .. i, suit.layout:col(75,15)).hit then
+              if natLayerId.text ~= "" and natLayerR.text ~= "" and natLayerG.text ~= "" and natLayerB.text ~= "" then
+                nat.flag:setLayer(natSelLayer, tonumber(natLayerId.text), tonumber(natLayerR.text), tonumber(natLayerG.text), tonumber(natLayerB.text))
+              end
+              nat.flag:render(0.5)
+              natSelLayer = i
+              natLayerId.text = tostring(layers[i].id)
+              natLayerR.text = tostring(layers[i].r)
+              natLayerG.text = tostring(layers[i].g)
+              natLayerB.text = tostring(layers[i].b)
+              return;
+            end
+
+          end
+          
+          dy = dy + 18
+        end
+        if suit.Button("Add", suit.layout:row(75,15)).hit then
+          nat.flag:addLayer(0, 255, 255, 255)
+        end
+      
+      end
       
     end
     ,function (x, y, button) -- fnClick

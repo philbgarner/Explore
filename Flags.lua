@@ -41,6 +41,8 @@ function Flag:new(name, width, height, r, g, b)
   itm.height = height
   itm.layers = {}
   itm:addLayer(0, r, g, b)
+  itm.canvas = love.graphics.newCanvas(width, height)
+  itm.image = nil
   
   itm.ui_blends_quads = {}
   
@@ -60,6 +62,21 @@ function Flag:addLayer(blendId, r, g, b)
   
 end
 
+function Flag:setLayer(layerId, blendId, r, g, b)
+  
+  if self.layers[layerId] ~= nil then
+    self.layers[layerId].id = blendId
+    self.layers[layerId].r = r
+    self.layers[layerId].g = g
+    self.layers[layerId].b = b
+  end
+  
+end
+
+function Flag:delLayer(index)
+  table.remove(self.layers, index)
+end
+
 function Flag:getLayer(layer)
   
   if self.layers[layer] == nil then return false end
@@ -68,10 +85,25 @@ function Flag:getLayer(layer)
   
 end
 
-function Flag:draw(x, y, scale)
+function Flag:swapLayers(a, b)
+  
+  local swap = self.layers[a]
+  self.layers[a] = self.layers[b]
+  self.layers[b] = swap
+  
+end
+
+function Flag:getLayers()
+  
+  return self.layers
+  
+end
+
+function Flag:render(scale)
   
   if scale == nil then scale = 1 end
   
+  love.graphics.setCanvas(self.canvas)
   love.graphics.push()
   love.graphics.scale(scale, scale)
   for i=1, #self.layers do
@@ -84,15 +116,25 @@ function Flag:draw(x, y, scale)
     -- Blending is only necessary if blendID > 0
     if blendID > 0 then
       love.graphics.setColor(r, g, b)
-      love.graphics.draw(ui_flag_blends, self.ui_blends_quads[blendID], x, y)
+      love.graphics.draw(ui_flag_blends, self.ui_blends_quads[blendID], 0, 0)
     else
       love.graphics.setColor(r, g, b)
-      love.graphics.rectangle("fill", x, y, self.width, self.height)
+      love.graphics.rectangle("fill", 0, 0, self.width, self.height)
     end
     
   end
   love.graphics.setColor(255, 255, 255)
   love.graphics.pop()
+  love.graphics.setCanvas()
+  self.image = love.graphics.newImage(self.canvas:newImageData())
+  
+end
+
+function Flag:draw(x, y)
+  
+  if self.image == nil then self:render() end
+  
+  love.graphics.draw(self.image, x, y)
   
 end
 
